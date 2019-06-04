@@ -1,0 +1,25 @@
+# python files
+*.pyc
+
+# VS code files
+*.code-workspace
+.vscode
+
+# project specific folders
+media
+data
+gis_data
+tmp
+staticfiles
+logs
+
+# environment file variables
+.env
+
+# ipython notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# test coverage
+.coverage
+htmlcov/
