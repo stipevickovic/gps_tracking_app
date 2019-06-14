@@ -1,7 +1,6 @@
 import dj_database_url
 from core.settings.env import ENV_BOOL, ENV_STR, ENV_LIST, ABS_PATH, PARDIR, ENV_NUM
 
-
 # default value is False
 DEBUG = ENV_BOOL('DEBUG')
 
