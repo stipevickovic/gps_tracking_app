@@ -114,6 +114,8 @@ CHANNEL_LAYERS = {
 # CORS
 CORS_ORIGIN_WHITELIST = ENV_LIST('CORS_ORIGIN_WHITELIST', ',')
 
+# Openlayer
+OPENLAYERS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/openlayers/2.13.1/OpenLayers.js'
 
 STATIC_URL = '/static/'
 STATIC_ROOT = ABS_PATH(PARDIR, 'staticfiles')
