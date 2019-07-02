@@ -6,7 +6,7 @@ from gps_tracking_app.models import GPSDevice, Log
 
 @admin.register(GPSDevice)
 class GPSDeviceAdmin(admin.ModelAdmin):
-    list_display = ('serial_number',)
+    list_display = ('serial_number', 'id')
 
 
 @admin.register(Log)

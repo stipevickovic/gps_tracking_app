@@ -126,3 +126,11 @@ MEDIA_ROOT = ABS_PATH(PARDIR, 'media')
 
 # Log dir path
 LOG_DIR = ABS_PATH(PARDIR, 'logs')
+
+MQTT_TTN = {
+    'broker_address': ENV_STR('MQTT_BROKER_ADDRESS'),
+    'port': ENV_NUM('MQTT_PORT'),
+    'user': ENV_STR('MQTT_USER'),
+    'password': ENV_STR('MQTT_PASSWORD'),
+    'device': ENV_STR('MQTT_DEVICE')
+}
