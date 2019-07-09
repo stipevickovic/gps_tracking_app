@@ -22,7 +22,10 @@ INSTALLED_APPS = [
     'django.contrib.gis',
     'channels',
     'rest_framework',
-    'gps_tracking_app'
+    'rest_framework_gis',
+    'gps_tracking_app',
+    'rest_framework_swagger',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
