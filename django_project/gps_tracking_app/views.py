@@ -6,7 +6,9 @@ from gps_tracking_app.serializers import GPSDeviceSerializer, LogSerializer, Geo
 
 
 def index(request):
-    return render(request, 'map/index.html', {})
+    location_object = Log.objects.order_by('-date_time').first()
+    location_dict = {"location": location_object}
+    return render(request, 'gps_tracking_app/index.html', location_dict)
 
 
 class DeviceList(generics.ListCreateAPIView):

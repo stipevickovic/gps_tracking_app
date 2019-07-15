@@ -1,4 +1,5 @@
 import dj_database_url
+import os
 from core.settings.env import ENV_BOOL, ENV_STR, ENV_LIST, ABS_PATH, PARDIR, ENV_NUM
 
 # default value is False
@@ -40,10 +41,12 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'core.urls'
 
+TEMPLATE_DIR = os.path.join(PARDIR, 'templates')
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [TEMPLATE_DIR, ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -137,3 +140,6 @@ MQTT_TTN = {
     'password': ENV_STR('MQTT_PASSWORD'),
     'device': ENV_STR('MQTT_DEVICE')
 }
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
