@@ -1,6 +1,12 @@
 import json
+import sys
 from asgiref.sync import async_to_sync
-from channels.generic.websocket import WebsocketConsumer
+
+from channels.generic.websocket import WebsocketConsumer, SyncConsumer
+from channels.layers import get_channel_layer
+from django.contrib.gis.geos import GEOSGeometry
+
+from gps_tracking_app.models import GeofenceZone, GPSDevice
 
 
 class GpsLogConsumer(WebsocketConsumer):
@@ -46,3 +52,41 @@ class GpsLogConsumer(WebsocketConsumer):
     def location_update(self, data):
         # Send message to WebSocket
         self.send(text_data=data['message'])
+
+
+class PositionCheckConsumer(SyncConsumer):
+
+    def position_check(self, message):
+        """
+        Check if there are zones in wich GPS device is not
+        located and send those location on websocket
+        """
+
+        # Creating POINT object out of longitude and latitude information
+        last_location = GEOSGeometry('POINT({}  {})'.format(message['long'], message['lat']),
+                                     srid=4326)
+
+        try:
+            gps_device = GPSDevice.objects.get(serial_number=message['gps_serial'])
+        except GPSDevice.DoesNotExist:
+            sys.stderr.write('GPS device with serial number {} does not exist!\n'.format(message['gps_serial']))
+            return
+
+        # Filter associated Geofence zones in which device is not located
+        exclude_zones = GeofenceZone.objects.filter(gps=gps_device).exclude(geom__contains=last_location)
+
+        # If there are zones without GPS signal, send their ID via websocket
+        if exclude_zones.exist() > 0:
+            # Send payload to websocket
+            channel_layer = get_channel_layer()
+            group_name = 'device_{}'.format(message['gps_serial'])
+            for zone in exclude_zones:
+                data = {'type': 'zone warning', 'long': message['long'],
+                        'lat': message['lat'], 'zone': zone.id}
+                async_to_sync(channel_layer.group_send)(
+                    group_name,
+                    {
+                        'type': 'location_update',
+                        'message': json.dumps(data)
+                    }
+                    )

@@ -49,14 +49,19 @@ def on_message(client, userdata, message):
 
     # Send payload to websocket
     channel_layer = get_channel_layer()
-    group_name = 'device_1'
+    group_name = 'device_{}'.format(gps_serial)
+    data = {'type': 'location update', 'long': gps_long, 'lat': gps_lat}
     async_to_sync(channel_layer.group_send)(
         group_name,
         {
             'type': 'location_update',
-            'message': json.dumps(gps_lat)
+            'message': json.dumps(data)
         }
         )
+
+    # Send payload to locatin-check channels
+    async_to_sync(channel_layer.send)('location-check', {'type': 'position_check',
+                                      'gps_serial': gps_serial, 'long': gps_long, 'lat': gps_lat})
 
 
 client = mqtt.Client()
