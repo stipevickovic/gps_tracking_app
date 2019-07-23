@@ -17,9 +17,11 @@ from gps_tracking_app.models import GPSDevice # noqa
 
 
 def on_connect(client, userdata, flags, rc):
+    sys.stdout.write('Connected with result code {} \n'.format(rc))
     client.subscribe('{}/devices/{}/up'.format(settings.MQTT_TTN['user'],
                                                settings.MQTT_TTN['device']))
-    sys.stdout.write('Connected with result code {} \n'.format(rc))
+    client.subscribe('{}/devices/{}/up'.format(settings.MQTT_TTN['user'],
+                                               settings.MQTT_TTN['device2']))
 
 
 def on_message(client, userdata, message):
