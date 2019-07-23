@@ -76,14 +76,13 @@ class PositionCheckConsumer(SyncConsumer):
         exclude_zones = GeofenceZone.objects.filter(gps=gps_device).exclude(geom__contains=last_location)
 
         # If there are zones without GPS signal, send their ID via websocket
-        if exclude_zones.exist() > 0:
+        if exclude_zones.exists():
             # Send payload to websocket
             channel_layer = get_channel_layer()
             group_name = 'device_{}'.format(message['gps_serial'])
-            for zone in exclude_zones:
-                data = {'type': 'zone warning', 'long': message['long'],
-                        'lat': message['lat'], 'zone': zone.id}
-                async_to_sync(channel_layer.group_send)(
+            data = {'type': 'zone warning', 'long': message['long'],
+                    'lat': message['lat'], 'zone': [zone.id for zone in exclude_zones]}
+            async_to_sync(channel_layer.group_send)(
                     group_name,
                     {
                         'type': 'location_update',
