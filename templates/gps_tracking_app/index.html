@@ -1,8 +1,11 @@
 <!DOCTYPE html>
+{% load staticfiles %}
 <html lang="en" dir="ltr" style="height: 100%;">
 <head>
   <meta charset="utf-8">
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css"
   integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
   crossorigin=""/>
@@ -10,38 +13,254 @@
   integrity="sha512-GffPMF3RvMeYyc1LWMHtK8EbPv0iNZ8/oTtHPx9/cc2ILxQ+u905qIwdpULaqDkyBKgOaB57QTMg7ztg8Jm2Og=="
   crossorigin=""></script>
   <title>Map</title>
+  <style>
+  ul, #myUL {
+    list-style-type: none;
+  }
+
+  #myUL {
+    margin: 0;
+    padding: 0;
+  }
+
+  .caret {
+    cursor: pointer;
+    -webkit-user-select: none; /* Safari 3.1+ */
+    -moz-user-select: none; /* Firefox 2+ */
+    -ms-user-select: none; /* IE 10+ */
+    user-select: none;
+  }
+
+  .caret::before {
+    content: "\25B6";
+    color: black;
+    display: inline-block;
+    margin-right: 6px;
+  }
+
+  .caret-down::before {
+    -ms-transform: rotate(90deg); /* IE 9 */
+    -webkit-transform: rotate(90deg); /* Safari */'
+    transform: rotate(90deg);
+  }
+
+  .nested {
+    display: none;
+  }
+
+  .active {
+    display: block;
+  }
+  b:hover {
+    color: white;
+    background-color: black;
+    cursor: pointer;
+  }
+  .activated{
+    background-color: black;
+    color: white;
+  }
+
+</style>
 </head>
 <body style="height: 100%;">
-  
-  <div id="mapid" style="width: 100%; height: 100%;"></div>
+
+  <div id="mapid" style="width: 100%; height: 100%; position: absolute; top: 0px; left: 0px; z-index: 1;"></div>
+
+  <div class="continer" style="height: 100%; width: 250px; position:relative; top: 0px; left: 0px; z-index: 10; background-color:grey; opacity: 0.9; ">
+    <ul id="myUL" style="padding-left: 5px; background-color: white; ">
+      <li><span class="caret"><b>DEVICES</b></span>
+        <ul id="devices" class="nested">
+
+        </ul>
+      </li>
+    </ul>
+    <ul id="myUL" style="padding-left: 5px; background-color: white; ">
+      <li><span class="caret" onclick="listZones()"><b>ZONES</b></span>
+        <ul id="zones" class="nested">
+
+        </ul>
+      </li>
+    </ul>
+    <img src='{% static 'gps_tracking_app/images/Untitled 3.png' %}' style="position:absolute; bottom: : 0px; left: 50%; width: 120px;	margin-left:-60px; ">
+
+  </div>
+
+
   <script>
 
-    console.log("<b>Hello world!</b><br />I am a popup.");
-    // console.log(typeof({{location}}));
+  // Define variables
+  var devicesListHTML = document.getElementById("devices");
+  var zonesListHTML = document.getElementById("zones");
+  var gpsdevices = [];
+  var activezones = [];
 
-    var mymap = L.map('mapid').setView([44.107752, 15.261269], 13);
+  // Add leaflet map and polygon layer
+  var mymap = L.map('mapid').setView([46,8], 6);
+  var zonePolygons = L.layerGroup().addTo(mymap);
 
-    var Stamen_TonerBackground = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner-background/{z}/{x}/{y}{r}.{ext}', {
-    	attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    	subdomains: 'abcd',
-    	minZoom: 0,
-    	maxZoom: 20,
-    	ext: 'png'
-    }).addTo(mymap);
+  // Toggle tree view
+  var toggler = document.getElementsByClassName("caret");
+  var i;
+  for (i = 0; i < toggler.length; i++) {
+    toggler[i].addEventListener("click", function() {
+      this.parentElement.querySelector(".nested").classList.toggle("active");
+      this.classList.toggle("caret-down");
+    });
+  }
 
-    var ws = new WebSocket("ws://127.0.0.1:8000/ws/gps/00679391F46E8D8E/");
-    ws.onmessage = function (event) {
-      console.log(typeof(JSON.parse(event.data)));
-      var message = JSON.parse(event.data)
-      console.log(message.lat);
-      L.marker(
-      [message.lat, message.long]
-      ).addTo(mymap);
 
-      mymap.setView([message.lat, message.long], 13)
+  // Display zones
+  function displayZones() {
+    zonePolygons.clearLayers();
+
+    Object.keys(gpsdevices).forEach(function(b) {
+      var request = new XMLHttpRequest();
+      request.open('GET', `http://127.0.0.1:8000/api/gpstracking/gps-devices/${gpsdevices[b]}/geofence-areas/`, true)
+      request.onload = function() {
+        var data = JSON.parse(this.response);
+        Object.keys(data.results).forEach(function(k) {
+          if (zonesListHTML.innerHTML.includes(`activated"> ${data.results[k].id}`)) {
+            L.geoJSON(data.results[k].geom, {style: {
+              "color": "#334d4a",
+              "weight": 3,
+              "opacity": 0.65
+            }}).addTo(zonePolygons);
+          }
+        })
+
+      }
+      request.send();
+    });
+
+  }
+
+  // List gps devices in tree view
+  var request = new XMLHttpRequest();
+  request.open('GET', 'http://127.0.0.1:8000/api/gpstracking/gps-devices/', true);
+  request.onload = function() {
+    var data = JSON.parse(this.response);
+    Object.keys(data.results).forEach(function(k) {
+      gpsdevices.push(data.results[k].serial_number)
+      devicesListHTML.innerHTML = devicesListHTML.innerHTML + `<li><b id=${data.results[k].serial_number} onclick="displayZones(); myFunction()"> ${data.results[k].serial_number} </b></li>`
+
+    })
+  }
+  request.send()
+
+  //Toggle gps device class and assign different actions depending on active class
+  function myFunction() {
+    event.target.classList.toggle("activated");
+    listZones();
+    var gps_sn = event.target.id;
+    var ws = new WebSocket(`ws://127.0.0.1:8000/ws/gps/${gps_sn}/`);
+    ws.open;
+    var locationMarkers = L.layerGroup().addTo(mymap);
+
+    if (event.target.classList.value == 'activated') {
+      ws.onmessage = function (event) {
+        locationMarkers.clearLayers();
+        var message = JSON.parse(event.data);
+
+        if (message.type == 'zone warning') {
+          L.marker(
+            [message.lat, message.long], {icon: outsideIcon}
+          ).addTo(locationMarkers).bindPopup(`<b>Device ${gps_sn} is out of zone: ${message.zone}</b>`).openPopup();
+        } else {
+          L.marker(
+            [message.lat, message.long], {icon: insideIcon}
+          ).addTo(locationMarkers).bindPopup(`<b>Device ${gps_sn}</b>`).openPopup();;
+        }
+        if (mymap.getZoom() < 13) {mymap.flyTo([message.lat, message.long], 13)
+        } else {mymap.flyTo([message.lat, message.long])}
+
+      }
+    } else {
+      var ws = new WebSocket(`ws://127.0.0.1:8000/ws/gps/${event.target.id}/`);
+      ws.onmessage = function(event) {
+
+      }
     }
+  }
+
+  // Toggle zones class
+  function myFunction2() {
+    event.target.classList.toggle("activated");
+  }
+
+  // List all zones depending on which device is activated
+  function listZones() {
+    zonesListHTML.innerHTML = ""
+    var request = new XMLHttpRequest();
+    request.open('GET', 'http://127.0.0.1:8000/api/gpstracking/gps-devices/', true);
+    request.onload = function() {
+      var data1 = JSON.parse(this.response);
+      var element = document.getElementById("zones");
+      Object.keys(data1.results).forEach(function(k) {
+        var gpsdevicebutton = document.getElementById(data1.results[k].serial_number);
+        if (gpsdevicebutton.classList.value == 'activated'){
+          var request = new XMLHttpRequest();
+          request.open('GET', `http://127.0.0.1:8000/api/gpstracking/gps-devices/${gpsdevicebutton.id}/geofence-areas/`, true);
+          request.onload = function() {
+            var data = JSON.parse(this.response);
+            Object.keys(data.results).forEach(function(k) {
+              zonesListHTML.innerHTML = zonesListHTML.innerHTML + `<li><b id=${data.results[k].id} onclick="myFunction2(); displayZones()"> ${data.results[k].id} </b></li>`
+            })
+          }
+          request.send()
+        }
+      })
+    }
+    request.send()
+  }
 
 
-  </script>
+  // Place zoom controler and scale bar
+  mymap.zoomControl.setPosition('bottomright');
+  L.control.scale({
+    position: 'bottomright'
+  }).addTo(mymap);
+
+  // Add leaflet basemap
+  var Stamen_TonerBackground = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner-background/{z}/{x}/{y}{r}.{ext}', {
+    attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    subdomains: 'abcd',
+    minZoom: 0,
+    maxZoom: 20,
+    ext: 'png'
+  }).addTo(mymap);
+
+  // Define black marker used when location is inside zones
+  var insideIcon = L.icon({
+    iconUrl: '{% static 'gps_tracking_app/images/map-marker.png' %}',
+    shadowUrl: '{% static 'gps_tracking_app/images/marker_shadow.png' %}',
+
+    iconSize:     [51, 51],
+    shadowSize:   [32, 26],
+    iconAnchor:   [26, 51],
+    shadowAnchor: [13, 25],
+    popupAnchor:  [-3, -76]
+  });
+
+  // Define red marker used when location is outside zones
+  var outsideIcon = L.icon({
+    iconUrl: '{% static 'gps_tracking_app/images/map-marker1.png' %}',
+    shadowUrl: '{% static 'gps_tracking_app/images/marker_shadow.png' %}',
+
+    iconSize:     [51, 51],
+    shadowSize:   [32, 26],
+    iconAnchor:   [26, 51],
+    shadowAnchor: [13, 25],
+    popupAnchor:  [-3, -76]
+  });
+
+
+
+</script>
+
+<link rel="stylesheet" type="text/css" href="http://www.shieldui.com/shared/components/latest/css/light-bootstrap/all.min.css" />
+<script type="text/javascript" src="http://www.shieldui.com/shared/components/latest/js/shieldui-all.min.js"></script>
+
+
 </body>
 </html>
