@@ -41,6 +41,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'core.urls'
 
+
 TEMPLATE_DIR = os.path.join(PARDIR, 'templates')
 
 TEMPLATES = [
@@ -125,7 +126,7 @@ OPENLAYERS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/openlayers/2.13.1/OpenL
 
 STATIC_URL = '/static/'
 STATIC_ROOT = ABS_PATH(PARDIR, 'staticfiles')
-STATICFILES_DIRS = []
+STATICFILES_DIRS = [os.path.join(PARDIR, 'static')]
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = ABS_PATH(PARDIR, 'media')
@@ -138,8 +139,6 @@ MQTT_TTN = {
     'port': ENV_NUM('MQTT_PORT'),
     'user': ENV_STR('MQTT_USER'),
     'password': ENV_STR('MQTT_PASSWORD'),
-    'device': ENV_STR('MQTT_DEVICE')
+    'device': ENV_STR('MQTT_DEVICE'),
+    'device2': ENV_STR('MQTT_DEVICE2')
 }
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
