@@ -9,7 +9,7 @@ Create Python3 virtual environment:
 
 Get the source from GitHub:
 
-    git clone git@bitbucket.org:in_terra/gps_tracking.git
+    git clone https://github.com/stipevickovic/gps_tracking_app.git
 
 Navigate to the repo directory:
 
